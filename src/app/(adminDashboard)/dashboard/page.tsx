@@ -3,9 +3,9 @@ import { ChartsSection } from "@/components/Dashboard/CommonDashboard/ChartSelec
 // import { DashboardHeader } from "@/components/Dashboard/CommonDashboard/DashboardHeader";
 import { QuickActions } from "@/components/Dashboard/CommonDashboard/QuickActions";
 import { RecentLeavesTable } from "@/components/Dashboard/CommonDashboard/RecentLeaveTable";
-import { RecentTasksTable } from "@/components/Dashboard/CommonDashboard/RecentTaskTable";
-import { SummaryCards } from "@/components/Dashboard/CommonDashboard/SummryCards";
+import { TeamEmployeeTaskSheet } from "@/components/Dashboard/CommonDashboard/RecentTaskTable";
 
+import { SummaryCards } from "@/components/Dashboard/CommonDashboard/SummryCards";
 
 export default function DashboardPage() {
   return (
@@ -19,9 +19,9 @@ export default function DashboardPage() {
         <AttendanceSection />
 
         <ChartsSection />
-        <RecentTasksTable />
+        <TeamEmployeeTaskSheet/>
         <RecentLeavesTable />
       </div>
     </main>
-  )
+  );
 }

@@ -1,156 +1,159 @@
 'use client';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { useState } from "react";
 
-const recentTasks = [
+type Operation = {
+  id: string;
+  date: string;
+  assignEmployeeId?: string;
+  assignEmployee: string;
+  employeeId: string;
+  employeeName: string;
+  team: string;
+  profileName: string;
+  orderId: string;
+  monetaryValue: number;
+  clientId: string;
+  orderLink?: string;
+  salesStatus: "Delivered" | "Revisions";
+  instructionLink?: string;
+  orderStatus: "Complete" | "Delivered";
+};
+
+const operations: Operation[] = [
   {
-    id: 1,
-    name: "Q4 Budget Planning",
-    assignedBy: "John Smith",
-    status: "In Progress",
-    dueDate: "2024-12-15",
-    priority: "High",
+    id: "EO/44447",
+    date: "2025-11-23",
+    assignEmployeeId: "11066",
+    assignEmployee: "Md. Shahed",
+    employeeId: "11367",
+    employeeName: "Nahidul Islam",
+    team: "Dark Pharos",
+    profileName: "uidigital",
+    orderId: "FO3D88175F41",
+    monetaryValue: 120,
+    clientId: "remywyt",
+    orderLink: "Link",
+    salesStatus: "Delivered",
+    instructionLink: "Link",
+    orderStatus: "Complete",
   },
   {
-    id: 2,
-    name: "Performance Review Forms",
-    assignedBy: "Emily Davis",
-    status: "Pending",
-    dueDate: "2024-12-20",
-    priority: "Medium",
-  },
-  {
-    id: 3,
-    name: "Team Building Event Planning",
-    assignedBy: "Michael Brown",
-    status: "Completed",
-    dueDate: "2024-12-01",
-    priority: "Low",
-  },
-  {
-    id: 4,
-    name: "Update Training Materials",
-    assignedBy: "Sarah Johnson",
-    status: "In Progress",
-    dueDate: "2024-12-18",
-    priority: "High",
-  },
-  {
-    id: 5,
-    name: "Policy Documentation Review",
-    assignedBy: "John Smith",
-    status: "Pending",
-    dueDate: "2024-12-25",
-    priority: "Medium",
-  },
-  {
-    id: 6,
-    name: "Recruitment Drive - Posting",
-    assignedBy: "Lisa Anderson",
-    status: "Completed",
-    dueDate: "2024-11-30",
-    priority: "High",
+    id: "EO/32739",
+    date: "2025-08-30",
+    assignEmployee: "Md. Shahed",
+    employeeId: "11367",
+    employeeName: "Nahidul Islam",
+    team: "Dark Pharos_Web_Night",
+    profileName: "xpeed_studio",
+    orderId: "FO82E15A6A6C6",
+    monetaryValue: 200,
+    clientId: "abdullaa460",
+    salesStatus: "Revisions",
+    orderStatus: "Complete",
   },
 ];
 
-function StatusBadge({ status }: { status: string }) {
-  const colors: Record<string, string> = {
-    Completed: "bg-green-100 text-green-800 hover:bg-green-100",
-    "In Progress": "bg-blue-100 text-blue-800 hover:bg-blue-100",
-    Pending: "bg-yellow-100 text-yellow-800 hover:bg-yellow-100",
+function StatusBadge({ value }: { value: string }) {
+  const map: Record<string, string> = {
+    Delivered: "bg-green-100 text-green-800",
+    Revisions: "bg-yellow-100 text-yellow-800",
+    Complete: "bg-blue-100 text-blue-800",
   };
 
-  return <Badge className={colors[status]}>{status}</Badge>;
+  return <Badge className={map[value]}>{value}</Badge>;
 }
 
-function PriorityBadge({ priority }: { priority: string }) {
-  const colors: Record<string, string> = {
-    High: "bg-red-100 text-red-800 hover:bg-red-100",
-    Medium: "bg-orange-100 text-orange-800 hover:bg-orange-100",
-    Low: "bg-gray-100 text-gray-800 hover:bg-gray-100",
-  };
-
-  return <Badge className={colors[priority]}>{priority}</Badge>;
-}
-
-export function RecentTasksTable() {
+export function TeamEmployeeTaskSheet() {
   const [selectedMonth, setSelectedMonth] = useState<number | "all">("all");
 
-  // Filter tasks by selected month (based on dueDate)
-  const filteredTasks = selectedMonth === "all"
-    ? recentTasks
-    : recentTasks.filter(task => {
-        const taskMonth = new Date(task.dueDate).getMonth() + 1; // getMonth() is 0-indexed
-        return taskMonth === selectedMonth;
+  const filtered = selectedMonth === "all"
+    ? operations
+    : operations.filter(op => {
+        const m = new Date(op.date).getMonth() + 1;
+        return m === selectedMonth;
       });
 
-  // Generate month options (1–12)
-  const monthOptions = Array.from({ length: 12 }, (_, i) => i + 1);
-
   return (
-    <Card className="border-0 shadow-sm bg-white">
-      <CardHeader className="pb-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <div className="flex items-center gap-3 flex-wrap">
-          <CardTitle className="text-base font-semibold text-slate-900">Recent Tasks</CardTitle>
-          <div className="flex items-center gap-2">
-            <label htmlFor="task-month-filter" className="text-sm text-slate-600 whitespace-nowrap">
-              Filter by Month:
-            </label>
-            <select
-              id="task-month-filter"
-              value={selectedMonth}
-              onChange={(e) =>
-                setSelectedMonth(e.target.value === "all" ? "all" : Number(e.target.value))
-              }
-              className="text-sm border border-slate-300 rounded-md px-2 py-1 focus:outline-none focus:ring-1 focus:ring-slate-400"
-            >
-              <option value="all">All Months</option>
-              {monthOptions.map((month) => (
-                <option key={month} value={month}>
-                  {new Date(2024, month - 1).toLocaleString("default", { month: "long" })}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
+    <Card className="border-0 shadow-sm">
+      <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <CardTitle className="text-base font-semibold">
+          Operations — Nahidul Islam
+        </CardTitle>
+
+        <select
+          value={selectedMonth}
+          onChange={(e) =>
+            setSelectedMonth(
+              e.target.value === "all" ? "all" : Number(e.target.value)
+            )
+          }
+          className="text-sm border rounded-md px-2 py-1"
+        >
+          <option value="all">All Months</option>
+          {Array.from({ length: 12 }).map((_, i) => (
+            <option key={i + 1} value={i + 1}>
+              {new Date(2025, i).toLocaleString("default", { month: "long" })}
+            </option>
+          ))}
+        </select>
       </CardHeader>
-      <CardContent>
-        <div className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow className="border-slate-200">
-                <TableHead className="text-slate-700 font-semibold">Task Name</TableHead>
-                <TableHead className="text-slate-700 font-semibold">Assigned By</TableHead>
-                <TableHead className="text-slate-700 font-semibold">Status</TableHead>
-                <TableHead className="text-slate-700 font-semibold">Due Date</TableHead>
-                <TableHead className="text-slate-700 font-semibold">Priority</TableHead>
+
+      <CardContent className="overflow-x-auto">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>ID</TableHead>
+              <TableHead>Date</TableHead>
+              <TableHead>Assign By</TableHead>
+              <TableHead>Profile</TableHead>
+              <TableHead>Order ID</TableHead>
+              <TableHead>Value</TableHead>
+              <TableHead>Client</TableHead>
+              <TableHead>Sales Status</TableHead>
+              <TableHead>Order Status</TableHead>
+            </TableRow>
+          </TableHeader>
+
+          <TableBody>
+            {filtered.map((op) => (
+              <TableRow key={op.id}>
+                <TableCell className="font-medium">{op.id}</TableCell>
+                <TableCell>
+                  {new Date(op.date).toLocaleDateString()}
+                </TableCell>
+                <TableCell>{op.assignEmployee}</TableCell>
+                <TableCell>{op.profileName}</TableCell>
+                <TableCell>{op.orderId}</TableCell>
+                <TableCell className="font-semibold">
+                  ${op.monetaryValue}
+                </TableCell>
+                <TableCell>{op.clientId}</TableCell>
+                <TableCell>
+                  <StatusBadge value={op.salesStatus} />
+                </TableCell>
+                <TableCell>
+                  <StatusBadge value={op.orderStatus} />
+                </TableCell>
               </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredTasks.map((task) => (
-                <TableRow key={task.id} className="border-slate-100 hover:bg-slate-50">
-                  <TableCell className="font-medium text-slate-900">{task.name}</TableCell>
-                  <TableCell className="text-slate-600">{task.assignedBy}</TableCell>
-                  <TableCell>
-                    <StatusBadge status={task.status} />
-                  </TableCell>
-                  <TableCell className="text-slate-600">
-                    {new Date(task.dueDate).toLocaleDateString("en-US", {
-                      month: "short",
-                      day: "numeric",
-                      year: "numeric",
-                    })}
-                  </TableCell>
-                  <TableCell>
-                    <PriorityBadge priority={task.priority} />
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
+            ))}
+          </TableBody>
+        </Table>
       </CardContent>
     </Card>
   );

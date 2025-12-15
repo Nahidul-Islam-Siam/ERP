@@ -6,42 +6,42 @@ import Link from "next/link";
 import { ReactNode } from "react";
 import { LuLayoutDashboard } from "react-icons/lu";
 import { getItem, MenuItem } from "../Layout";
-// import { SlCalender } from "react-icons/sl";
-// import { LuClipboardList } from "react-icons/lu";
+import { SlCalender } from "react-icons/sl";
+import { LuClipboardList } from "react-icons/lu";
 // import { CiSettings } from "react-icons/ci";
-// import { BsPeople } from "react-icons/bs";
-// import { RiContactsBook2Line } from "react-icons/ri";
+import { BsPeople } from "react-icons/bs";
+import { RiContactsBook2Line } from "react-icons/ri";
 const navItems: MenuItem[] = [
   getItem(
     <Link href="/dashboard">Dashboard</Link>,
     "/dashboard",
     <LuLayoutDashboard />
   ),
-//   getItem(
-//     <Link href="/dashboard/booking-list">Booking List</Link>,
-//     "/dashboard/booking-list",
-// <SlCalender />
-//   ),
-//   getItem(
-//     <Link href="/dashboard/my-listing">My Listing</Link>,
-//     "/dashboard/my-listing",
-// <LuClipboardList />
-//   ),
-//   getItem(
-//     <Link href="/dashboard/subscription">Subscription</Link>,
-//     "/dashboard/subscription",
-//     <LuLayoutDashboard />
-//   ),
-//   getItem(
-//     <Link href="/dashboard/user">User</Link>,
-//     "/dashboard/user",
-// <BsPeople />
-//   ),
-//     getItem(
-//     <Link href="/dashboard/contact-request">Contact Request</Link>,
-//     "/dashboard/contact-request",
-//     <RiContactsBook2Line />
-//   ),
+  getItem(
+    <Link href="/dashboard/leave-management">Leave Management</Link>,
+    "/dashboard/leave-management",
+<SlCalender />
+  ),
+  getItem(
+    <Link href="/dashboard/profile">Profile</Link>,
+    "/dashboard/profile",
+<LuClipboardList />
+  ),
+  getItem(
+    <Link href="/dashboard/team-workspace">Team Workspace</Link>,
+    "/dashboard/team-workspace",
+    <LuLayoutDashboard />
+  ),
+  getItem(
+    <Link href="/dashboard/superviser-workspace">Super Viser Workspace</Link>,
+    "/dashboard/superviser-workspace",
+<BsPeople />
+  ),
+    getItem(
+    <Link href="/dashboard/hr-admin-dashboard">HR Admin Dashboard</Link>,
+    "/dashboard/hr-admin-dashboard",
+    <RiContactsBook2Line />
+  ),
 //       getItem(
 //     <Link href="/dashboard/setting">Setting</Link>,
 //     "/dashboard/setting",
