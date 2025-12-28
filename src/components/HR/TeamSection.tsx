@@ -1,16 +1,12 @@
-"use client";
+/* eslint-disable react-hooks/exhaustive-deps */
+/* eslint-disable @typescript-eslint/no-explicit-any */
+// components/TeamSection.tsx
+"use client"
 
-import { useState, useRef } from "react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { useState, useMemo } from "react"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent } from "@/components/ui/card"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import {
   Dialog,
   DialogContent,
@@ -18,161 +14,139 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Briefcase, Pencil, Trash2, Search, Image as ImageIcon, Upload } from "lucide-react";
-import Image from "next/image";
+} from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Briefcase, Pencil, Trash2, Search } from "lucide-react"
 
-// Mock employees
-const mockEmployees = [
-  { id: 1, name: "Sarah Johnson", position: "Senior Developer", employeeId: "EMP-2022-001" },
-  { id: 2, name: "Michael Chen", position: "Product Manager", employeeId: "EMP-2021-002" },
-  { id: 3, name: "Emily Rodriguez", position: "UX Designer", employeeId: "EMP-2023-003" },
-  { id: 4, name: "James Wilson", position: "Data Analyst", employeeId: "EMP-2022-004" },
-  { id: 5, name: "Aisha Patel", position: "HR Manager", employeeId: "EMP-2020-005" },
-];
+interface Employee {
+  employeeId: string
+  name: string
+  position: string
+}
 
-// Mock teams WITH editable teamId
-const mockTeams = [
-  { 
-    id: 1, 
-    teamId: "ENG-FRONTEND",      // ← Customizable ID
-    name: "Engineering Team", 
-    description: "Owns core platform infrastructure",
-    logo: "https://placehold.co/100x100/4f46e5/white?text=ET",
-    leadId: 1,
-    coLeadId: 4,
-    department: "Engineering",
-    status: "active",
-    members: 12
-  },
-  { 
-    id: 2, 
-    teamId: "PROD-INNOVATION",
-    name: "Product Innovation", 
-    description: "Drives new product features",
-    logo: null,
-    leadId: 2,
-    coLeadId: null,
-    department: "Product",
-    status: "active",
-    members: 8
-  },
-];
+interface Team {
+  id: number
+  name: string
+  department: string
+  leadId: string
+  memberIds: string[]
+  description?: string
+}
 
-const departments = ["Engineering", "Product", "Design", "Analytics", "Human Resources"];
-const statuses = ["active", "inactive"];
+// Sample employee data
+const employees: Employee[] = [
+  { employeeId: "EMP-1001", name: "Sarah Johnson", position: "Senior Developer" },
+  { employeeId: "EMP-1002", name: "Michael Chen", position: "Product Manager" },
+  { employeeId: "EMP-1003", name: "Emily Rodriguez", position: "UX Designer" },
+  { employeeId: "EMP-1004", name: "James Wilson", position: "Data Analyst" },
+  { employeeId: "EMP-1005", name: "Aisha Patel", position: "HR Manager" },
+]
 
-const getEmployeeName = (id: number | null) => {
-  if (id === null) return "—";
-  const emp = mockEmployees.find(e => e.id === id);
-  return emp ? emp.name : "Unknown";
-};
+export function TeamSection() {
+  const [teams, setTeams] = useState<Team[]>([
+    {
+      id: 1,
+      name: "Frontend Squad",
+      department: "Engineering",
+      leadId: "EMP-1001",
+      memberIds: ["EMP-1003", "EMP-1004"],
+      description: "Web UI/UX development",
+    },
+    {
+      id: 2,
+      name: "Product Vision",
+      department: "Product",
+      leadId: "EMP-1002",
+      memberIds: ["EMP-1001", "EMP-1005"],
+    },
+  ])
+  const [teamModalOpen, setTeamModalOpen] = useState(false)
+  const [newTeam, setNewTeam] = useState<Omit<Team, "id">>({
+    name: "",
+    department: "",
+    leadId: "",
+    memberIds: [],
+    description: "",
+  })
 
-// Smart auto-generation (can be customized)
-const generateSmartTeamId = (name: string, department: string) => {
-  const deptCode = department.substring(0, 3).toUpperCase();
-  const nameCode = name.split(' ')
-    .map(word => word.substring(0, 3).toUpperCase())
-    .join('');
-  return `${deptCode}-${nameCode}`;
-};
+  const [searchLead, setSearchLead] = useState("")
+  const [searchMember, setSearchMember] = useState("")
+  const [teamSearch, setTeamSearch] = useState("")
 
-export default function TeamSection() {
-  const [modalOpen, setModalOpen] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
-  const [currentTeam, setCurrentTeam] = useState<typeof mockTeams[0] | null>(null);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [previewLogo, setPreviewLogo] = useState<string | null>(null);
-  const [teamIdInput, setTeamIdInput] = useState(""); // For form control
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const handleChange = (field: keyof typeof newTeam, value: any) => {
+    setNewTeam((prev) => ({ ...prev, [field]: value }))
+  }
 
-  // Handle edit team
-  const handleEdit = (team: typeof mockTeams[0]) => {
-    setCurrentTeam(team);
-    setTeamIdInput(team.teamId);
-    setPreviewLogo(team.logo);
-    setIsEditing(true);
-    setModalOpen(true);
-  };
+  const toggleMember = (employeeId: string) => {
+    setNewTeam((prev) => ({
+      ...prev,
+      memberIds: prev.memberIds.includes(employeeId)
+        ? prev.memberIds.filter((id) => id !== employeeId)
+        : [...prev.memberIds, employeeId],
+    }))
+  }
 
-  // Handle create team
-  const handleCreate = () => {
-    setCurrentTeam(null);
-    setPreviewLogo(null);
-    
-    // Auto-generate smart ID for new teams
-    const defaultId = generateSmartTeamId("New Team", "Engineering");
-    setTeamIdInput(defaultId);
-    
-    setIsEditing(false);
-    setModalOpen(true);
-  };
+  const handleSaveTeam = () => {
+    const nextId = teams.length ? Math.max(...teams.map(t => t.id)) + 1 : 1
+    setTeams([...teams, { ...newTeam, id: nextId }])
+    setTeamModalOpen(false)
+    setNewTeam({ name: "", department: "", leadId: "", memberIds: [], description: "" })
+    setSearchLead("")
+    setSearchMember("")
+  }
 
-  // Handle logo upload
-  const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        setPreviewLogo(event.target?.result as string);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
+  // Filter employees for lead select
+  const filteredLeads = employees.filter(
+    (emp) =>
+      emp.name.toLowerCase().includes(searchLead.toLowerCase()) ||
+      emp.position.toLowerCase().includes(searchLead.toLowerCase()) ||
+      emp.employeeId.toLowerCase().includes(searchLead.toLowerCase())
+  )
 
-  const triggerFileInput = () => {
-    fileInputRef.current?.click();
-  };
+  // Filter employees for member list
+  const filteredMembers = employees.filter(
+    (emp) =>
+      emp.name.toLowerCase().includes(searchMember.toLowerCase()) ||
+      emp.position.toLowerCase().includes(searchMember.toLowerCase()) ||
+      emp.employeeId.toLowerCase().includes(searchMember.toLowerCase())
+  )
 
-  const resetLogo = () => {
-    setPreviewLogo(null);
-    if (fileInputRef.current) fileInputRef.current.value = "";
-  };
-
-  // Filter teams
-  const filteredTeams = mockTeams.filter(team => {
-    const query = searchTerm.toLowerCase();
-    const teamName = team.name.toLowerCase();
-    const teamId = team.teamId.toLowerCase();
-    const leadName = getEmployeeName(team.leadId).toLowerCase();
-    const coLeadName = getEmployeeName(team.coLeadId).toLowerCase();
-    
-    return (
-      teamName.includes(query) ||
-      teamId.includes(query) ||
-      leadName.includes(query) ||
-      coLeadName.includes(query)
-    );
-  });
+  // Filter teams based on search
+  const filteredTeams = useMemo(() => {
+    if (!teamSearch.trim()) return teams
+    const term = teamSearch.toLowerCase()
+    return teams.filter(
+      (team) =>
+        team.name.toLowerCase().includes(term) ||
+        team.department.toLowerCase().includes(term) ||
+        employees.some(emp => 
+          (team.leadId === emp.employeeId || team.memberIds.includes(emp.employeeId)) &&
+          (emp.name.toLowerCase().includes(term) || emp.position.toLowerCase().includes(term))
+        )
+    )
+  }, [teams, teamSearch, employees])
 
   return (
     <>
       <section className="mb-8">
-        <div className="mb-4 flex items-center justify-between">
+        <div className="mb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h2 className="text-xl font-semibold">Teams</h2>
-            <p className="text-sm text-muted-foreground">Manage team structures and leadership</p>
+            <p className="text-sm text-muted-foreground">Organize and manage team structures</p>
           </div>
-          <div className="flex items-center gap-3">
-            <div className="relative">
+          <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+            <div className="relative flex-1 sm:flex-none">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 placeholder="Search teams..."
-                className="pl-10 w-64"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                value={teamSearch}
+                onChange={(e) => setTeamSearch(e.target.value)}
+                className="pl-10 w-full sm:w-64"
               />
             </div>
-            <Button onClick={handleCreate}>
+            <Button onClick={() => setTeamModalOpen(true)} className="w-full sm:w-auto">
               <Briefcase className="mr-2 h-4 w-4" />
               Create Team
             </Button>
@@ -180,259 +154,210 @@ export default function TeamSection() {
         </div>
 
         <Card>
-          <CardContent className="p-0">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Team</TableHead>
-                  <TableHead>ID</TableHead>
-                  <TableHead>Lead</TableHead>
-                  <TableHead>Co-Lead</TableHead>
-                  <TableHead>Department</TableHead>
-                  <TableHead>Members</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredTeams.map((team) => (
-                  <TableRow key={team.id}>
-                    <TableCell>
-                      <div className="flex items-center gap-3">
-                        {team.logo ? (
-                          <Image
-                            width={32}
-                            height={32}
-                            src={team.logo}
-                            alt={team.name}
-                            className="h-8 w-8 rounded object-cover"
-                          />
-                        ) : (
-                          <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
-                            <span className="text-xs font-medium text-primary">
-                              {team.name.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase()}
-                            </span>
-                          </div>
-                        )}
-                        <div>
-                          <div className="font-medium">{team.name}</div>
-                          <div className="text-xs text-muted-foreground mt-1">{team.description}</div>
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell className="font-mono text-sm">{team.teamId}</TableCell>
-                    <TableCell>{getEmployeeName(team.leadId)}</TableCell>
-                    <TableCell>{getEmployeeName(team.coLeadId)}</TableCell>
-                    <TableCell>{team.department}</TableCell>
-                    <TableCell>{team.members} members</TableCell>
-                    <TableCell>
-                      <span className={`px-2 py-1 rounded-full text-xs capitalize ${
-                        team.status === "active" ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-800"
-                      }`}>
-                        {team.status}
-                      </span>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        <Button 
-                          variant="ghost" 
-                          size="icon"
-                          onClick={() => handleEdit(team)}
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="icon">
-                          <Trash2 className="h-4 w-4 text-destructive" />
-                        </Button>
-                      </div>
-                    </TableCell>
+          <CardContent className="p-0 overflow-x-auto">
+            {filteredTeams.length === 0 ? (
+              <div className="py-12 text-center text-sm text-muted-foreground">
+                {teamSearch ? "No teams match your search." : "No teams created yet."}
+              </div>
+            ) : (
+              <Table className="min-w-[700px]">
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-1/4">Team Name</TableHead>
+                    <TableHead className="w-1/5">Department</TableHead>
+                    <TableHead className="w-1/4">Team Lead</TableHead>
+                    <TableHead className="w-1/4">Members</TableHead>
+                    <TableHead className="text-right w-16">Actions</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {filteredTeams.map((team) => {
+                    const lead = employees.find((emp) => emp.employeeId === team.leadId)
+                    const members = team.memberIds
+                      .map(id => employees.find(e => e.employeeId === id)?.name || "")
+                      .filter(Boolean)
+                    return (
+                      <TableRow key={team.id} className="hover:bg-accent/50 transition-colors">
+                        <TableCell className="font-medium">{team.name}</TableCell>
+                        <TableCell>
+                          <span className="px-2 py-1 rounded-full bg-secondary text-xs">
+                            {team.department}
+                          </span>
+                        </TableCell>
+                        <TableCell>
+                          {lead ? (
+                            <div>
+                              <div className="font-medium">{lead.name}</div>
+                              <div className="text-xs text-muted-foreground">{lead.position}</div>
+                            </div>
+                          ) : (
+                            <span className="text-muted-foreground">—</span>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {members.length > 0 ? (
+                            <div className="flex flex-wrap gap-1">
+                              {members.slice(0, 2).map((name, i) => (
+                                <span
+                                  key={i}
+                                  className="px-2 py-0.5 rounded-full bg-accent text-xs text-accent-foreground"
+                                >
+                                  {name}
+                                </span>
+                              ))}
+                              {members.length > 2 && (
+                                <span className="text-xs text-muted-foreground">
+                                  +{members.length - 2} more
+                                </span>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="text-muted-foreground text-sm">—</span>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex justify-end gap-1">
+                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8"
+                              onClick={() => setTeams(teams.filter((t) => t.id !== team.id))}
+                            >
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    )
+                  })}
+                </TableBody>
+              </Table>
+            )}
           </CardContent>
         </Card>
       </section>
 
       {/* Team Modal */}
-      <Dialog open={modalOpen} onOpenChange={setModalOpen}>
-        <DialogContent className="sm:max-w-[520px]">
+      <Dialog open={teamModalOpen} onOpenChange={setTeamModalOpen}>
+        <DialogContent className="sm:max-w-[600px]">
           <DialogHeader>
-            <DialogTitle>{isEditing ? "Edit Team" : "Create Team"}</DialogTitle>
+            <DialogTitle>Create New Team</DialogTitle>
             <DialogDescription>
-              {isEditing 
-                ? "Update team details and leadership." 
-                : "Set up a new team with leadership and department."}
+              Assign a team lead and members from your employee directory.
             </DialogDescription>
           </DialogHeader>
-          <div className="grid gap-4 py-4 max-h-[60vh] overflow-y-auto">
-            {/* Team Logo Upload */}
-            <div className="grid gap-2">
-              <Label>Team Logo</Label>
-              <div className="flex items-start gap-4">
-                <div className="relative">
-                  {previewLogo ? (
-                    <Image
-                      width={64}
-                      height={64}
-                      src={previewLogo}
-                      alt="Preview"
-                      className="h-16 w-16 rounded object-cover border"
-                    />
-                  ) : (
-                    <div className="h-16 w-16 rounded-full bg-muted flex items-center justify-center border-2 border-dashed">
-                      <ImageIcon className="h-6 w-6 text-muted-foreground" />
-                    </div>
-                  )}
-                </div>
-                <div className="flex flex-col gap-2">
-                  <input
-                    type="file"
-                    ref={fileInputRef}
-                    onChange={handleLogoChange}
-                    accept="image/png, image/jpeg, image/jpg"
-                    className="hidden"
-                  />
-                  <Button type="button" variant="outline" size="sm" onClick={triggerFileInput}>
-                    <Upload className="mr-2 h-4 w-4" />
-                    Choose Image
-                  </Button>
-                  {(previewLogo || (isEditing && currentTeam?.logo)) && (
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={resetLogo}
-                      className="text-destructive"
-                    >
-                      Remove
-                    </Button>
-                  )}
-                </div>
-              </div>
-              <p className="text-xs text-muted-foreground">JPG or PNG, shown in team listings</p>
-            </div>
 
-            {/* Team Name */}
+          <div className="grid gap-5 py-4">
             <div className="grid gap-2">
-              <Label htmlFor="teamName">Team Name *</Label>
-              <Input 
-                id="teamName" 
-                placeholder="Frontend Platform" 
-                defaultValue={currentTeam?.name || ""}
-                required
+              <Label htmlFor="teamName">Team Name</Label>
+              <Input
+                id="teamName"
+                value={newTeam.name}
+                onChange={(e) => handleChange("name", e.target.value)}
+                placeholder="e.g. Mobile App Team"
               />
             </div>
 
-            {/* Team ID — Editable! */}
             <div className="grid gap-2">
-              <Label htmlFor="teamId">Team ID *</Label>
-              <Input 
-                id="teamId"
-                value={teamIdInput}
-                onChange={(e) => setTeamIdInput(e.target.value)}
-                placeholder="e.g. ENG-FRONTEND"
-                required
-              />
-              <p className="text-xs text-muted-foreground">
-                {isEditing ? "Edit team identifier" : "Auto-generated, but editable"}
-              </p>
-            </div>
-
-            {/* Description */}
-            <div className="grid gap-2">
-              <Label htmlFor="description">Description</Label>
-              <Input 
-                id="description" 
-                placeholder="Owns core platform infrastructure" 
-                defaultValue={currentTeam?.description || ""}
-              />
-            </div>
-
-            {/* Team Lead */}
-            <div className="grid gap-2">
-              <Label htmlFor="teamLead">Team Lead *</Label>
-              <Select 
-                defaultValue={currentTeam?.leadId?.toString() || ""}
-                required
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select team lead" />
-                </SelectTrigger>
-                <SelectContent>
-                  {mockEmployees.map((emp) => (
-                    <SelectItem key={emp.id} value={emp.id.toString()}>
-                      {emp.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Co-Lead */}
-            <div className="grid gap-2">
-              <Label htmlFor="coLead">Co-Lead (Optional)</Label>
-              <Select defaultValue={currentTeam?.coLeadId?.toString() || ""}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select co-lead (optional)" />
-                </SelectTrigger>
-                <SelectContent>
-                  {mockEmployees.map((emp) => (
-                    <SelectItem key={emp.id} value={emp.id.toString()}>
-                      {emp.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Department */}
-            <div className="grid gap-2">
-              <Label htmlFor="teamDepartment">Department *</Label>
-              <Select 
-                defaultValue={currentTeam?.department.toLowerCase() || ""}
-                required
-              >
-                <SelectTrigger>
+              <Label htmlFor="department">Department</Label>
+              <Select onValueChange={(val) => handleChange("department", val)} value={newTeam.department}>
+                <SelectTrigger id="department">
                   <SelectValue placeholder="Select department" />
                 </SelectTrigger>
                 <SelectContent>
-                  {departments.map((dept) => (
-                    <SelectItem key={dept} value={dept.toLowerCase()}>
-                      {dept}
+                  <SelectItem value="Engineering">Engineering</SelectItem>
+                  <SelectItem value="Product">Product</SelectItem>
+                  <SelectItem value="Design">Design</SelectItem>
+                  <SelectItem value="Analytics">Analytics</SelectItem>
+                  <SelectItem value="HR">Human Resources</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="grid gap-2">
+              <Label>Team Lead</Label>
+              <Input
+                placeholder="Search by name, position, or ID..."
+                value={searchLead}
+                onChange={(e) => setSearchLead(e.target.value)}
+                className="mb-2"
+              />
+              <Select onValueChange={(val) => handleChange("leadId", val)} value={newTeam.leadId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Choose a team lead" />
+                </SelectTrigger>
+                <SelectContent>
+                  {filteredLeads.map((emp) => (
+                    <SelectItem key={emp.employeeId} value={emp.employeeId}>
+                      <div>
+                        <div className="font-medium">{emp.name}</div>
+                        <div className="text-xs text-muted-foreground">{emp.position} • {emp.employeeId}</div>
+                      </div>
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
 
-            {/* Status */}
             <div className="grid gap-2">
-              <Label htmlFor="status">Status</Label>
-              <Select defaultValue={currentTeam?.status || "active"}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {statuses.map((status) => (
-                    <SelectItem key={status} value={status}>
-                      {status.charAt(0).toUpperCase() + status.slice(1)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Label>Team Members</Label>
+              <Input
+                placeholder="Search employees to add..."
+                value={searchMember}
+                onChange={(e) => setSearchMember(e.target.value)}
+                className="mb-2"
+              />
+              <div className="max-h-48 overflow-y-auto border rounded-md p-2 bg-card">
+                {filteredMembers.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-2">No employees found</p>
+                ) : (
+                  filteredMembers.map((emp) => (
+                    <div key={emp.employeeId} className="flex items-center gap-3 py-1.5">
+                      <input
+                        type="checkbox"
+                        checked={newTeam.memberIds.includes(emp.employeeId)}
+                        onChange={() => toggleMember(emp.employeeId)}
+                        className="h-4 w-4 rounded"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <div className="font-medium truncate">{emp.name}</div>
+                        <div className="text-xs text-muted-foreground truncate">
+                          {emp.position} • {emp.employeeId}
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+
+            <div className="grid gap-2">
+              <Label htmlFor="description">Description (Optional)</Label>
+              <Input
+                id="description"
+                value={newTeam.description}
+                onChange={(e) => handleChange("description", e.target.value)}
+                placeholder="e.g. Responsible for dashboard redesign"
+              />
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setModalOpen(false)}>
+
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" onClick={() => setTeamModalOpen(false)}>
               Cancel
             </Button>
-            <Button>
-              {isEditing ? "Save Changes" : "Create Team"}
+            <Button
+              onClick={handleSaveTeam}
+              disabled={!newTeam.name || !newTeam.department || !newTeam.leadId}
+            >
+              Create Team
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
     </>
-  );
+  )
 }
