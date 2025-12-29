@@ -1,5 +1,3 @@
-/* eslint-disable react-hooks/exhaustive-deps */
-/* eslint-disable @typescript-eslint/no-explicit-any */
 // components/TeamSection.tsx
 "use client"
 
@@ -20,10 +18,18 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Briefcase, Pencil, Trash2, Search } from "lucide-react"
 
+// Full employee interface (same as EmployeeSection)
 interface Employee {
   employeeId: string
   name: string
+  email: string
+  password: string // not used here, but kept for consistency
   position: string
+  department: string
+  employeeType: string
+  dateOfJoining: string
+  contactNumber: string
+  address: string
 }
 
 interface Team {
@@ -35,13 +41,80 @@ interface Team {
   description?: string
 }
 
-// Sample employee data
+// Employee data — matching your EmployeeSection structure
 const employees: Employee[] = [
-  { employeeId: "EMP-1001", name: "Sarah Johnson", position: "Senior Developer" },
-  { employeeId: "EMP-1002", name: "Michael Chen", position: "Product Manager" },
-  { employeeId: "EMP-1003", name: "Emily Rodriguez", position: "UX Designer" },
-  { employeeId: "EMP-1004", name: "James Wilson", position: "Data Analyst" },
-  { employeeId: "EMP-1005", name: "Aisha Patel", position: "HR Manager" },
+  {
+    employeeId: "EMP-1001",
+    name: "Sarah Johnson",
+    email: "sarah.j@company.com",
+    password: "hashed123",
+    position: "Senior Developer",
+    department: "CMS",
+    employeeType: "Permanent",
+    dateOfJoining: "2022-03-15",
+    contactNumber: "+8801712345678",
+    address: "123 Tech St, Dhaka"
+  },
+  {
+    employeeId: "EMP-1002",
+    name: "Michael Chen",
+    email: "m.chen@company.com",
+    password: "hashed456",
+    position: "Product Manager",
+    department: "Digital Marketing",
+    employeeType: "Permanent",
+    dateOfJoining: "2021-07-22",
+    contactNumber: "+1234567890",
+    address: "456 Product Ave, New York"
+  },
+  {
+    employeeId: "EMP-1003",
+    name: "Emily Rodriguez",
+    email: "e.rodriguez@company.com",
+    password: "hashed789",
+    position: "UX Designer",
+    department: "UI/UX Design",
+    employeeType: "Permanent",
+    dateOfJoining: "2023-01-10",
+    contactNumber: "+9876543210",
+    address: "789 Design Blvd, San Francisco"
+  },
+  {
+    employeeId: "EMP-1004",
+    name: "James Wilson",
+    email: "j.wilson@company.com",
+    password: "hashed101",
+    position: "Data Analyst",
+    department: "Analytics",
+    employeeType: "Contract",
+    dateOfJoining: "2022-11-05",
+    contactNumber: "+5555555555",
+    address: "321 Analytics Rd, Seattle"
+  },
+  {
+    employeeId: "EMP-1005",
+    name: "Aisha Patel",
+    email: "a.patel@company.com",
+    password: "hashed202",
+    position: "HR Manager",
+    department: "HR",
+    employeeType: "Permanent",
+    dateOfJoining: "2020-05-18",
+    contactNumber: "+7777777777",
+    address: "987 HR Blvd, Los Angeles"
+  },
+]
+
+// Departments — exactly as you specified
+const DEPARTMENTS = [
+  { value: "CMS", label: "CMS (wordpress, shopify, wix, wix studio, webflow, squreapace)" },
+  { value: "HR", label: "HR" },
+  { value: "Finance", label: "Finance" },
+  { value: "Digital Marketing", label: "Digital Marketing" },
+  { value: "FSD", label: "FSD (Full Stack Development)" },
+  { value: "Mobile App", label: "Mobile App (Flutter)" },
+  { value: "Graphics Designer", label: "Graphics Designer" },
+  { value: "UI/UX Design", label: "UI/UX Design" },
 ]
 
 export function TeamSection() {
@@ -49,7 +122,7 @@ export function TeamSection() {
     {
       id: 1,
       name: "Frontend Squad",
-      department: "Engineering",
+      department: "CMS",
       leadId: "EMP-1001",
       memberIds: ["EMP-1003", "EMP-1004"],
       description: "Web UI/UX development",
@@ -57,13 +130,19 @@ export function TeamSection() {
     {
       id: 2,
       name: "Product Vision",
-      department: "Product",
+      department: "Digital Marketing",
       leadId: "EMP-1002",
       memberIds: ["EMP-1001", "EMP-1005"],
     },
   ])
-  const [teamModalOpen, setTeamModalOpen] = useState(false)
-  const [newTeam, setNewTeam] = useState<Omit<Team, "id">>({
+
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [isEditing, setIsEditing] = useState(false)
+  const [editingTeamId, setEditingTeamId] = useState<number | null>(null)
+  const [profileModalOpen, setProfileModalOpen] = useState(false)
+  const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null)
+
+  const [formData, setFormData] = useState<Omit<Team, "id">>({
     name: "",
     department: "",
     leadId: "",
@@ -75,58 +154,97 @@ export function TeamSection() {
   const [searchMember, setSearchMember] = useState("")
   const [teamSearch, setTeamSearch] = useState("")
 
-  const handleChange = (field: keyof typeof newTeam, value: any) => {
-    setNewTeam((prev) => ({ ...prev, [field]: value }))
+  // Modal handlers
+  const openCreateModal = () => {
+    setIsEditing(false)
+    setFormData({ name: "", department: "", leadId: "", memberIds: [], description: "" })
+    setSearchLead("")
+    setSearchMember("")
+    setIsModalOpen(true)
+  }
+
+  const openEditModal = (team: Team) => {
+    setIsEditing(true)
+    setEditingTeamId(team.id)
+    setFormData({
+      name: team.name,
+      department: team.department,
+      leadId: team.leadId,
+      memberIds: [...team.memberIds],
+      description: team.description || "",
+    })
+    setSearchLead("")
+    setSearchMember("")
+    setIsModalOpen(true)
+  }
+
+  const openProfileModal = (employeeId: string) => {
+    const emp = employees.find(e => e.employeeId === employeeId)
+    if (emp) {
+      setSelectedEmployee(emp)
+      setProfileModalOpen(true)
+    }
+  }
+
+  // Form handlers
+  const handleChange = (field: keyof typeof formData, value: string | string[]) => {
+    setFormData(prev => ({ ...prev, [field]: value }))
   }
 
   const toggleMember = (employeeId: string) => {
-    setNewTeam((prev) => ({
+    setFormData(prev => ({
       ...prev,
       memberIds: prev.memberIds.includes(employeeId)
-        ? prev.memberIds.filter((id) => id !== employeeId)
+        ? prev.memberIds.filter(id => id !== employeeId)
         : [...prev.memberIds, employeeId],
     }))
   }
 
-  const handleSaveTeam = () => {
-    const nextId = teams.length ? Math.max(...teams.map(t => t.id)) + 1 : 1
-    setTeams([...teams, { ...newTeam, id: nextId }])
-    setTeamModalOpen(false)
-    setNewTeam({ name: "", department: "", leadId: "", memberIds: [], description: "" })
-    setSearchLead("")
-    setSearchMember("")
+  const handleSave = () => {
+    if (!formData.name.trim() || !formData.department || !formData.leadId) return
+
+    setTeams(prev => {
+      if (isEditing && editingTeamId !== null) {
+        return prev.map(team =>
+          team.id === editingTeamId ? { ...formData, id: editingTeamId } : team
+        )
+      } else {
+        const nextId = prev.length ? Math.max(...prev.map(t => t.id)) + 1 : 1
+        return [...prev, { ...formData, id: nextId }]
+      }
+    })
+
+    setIsModalOpen(false)
   }
 
-  // Filter employees for lead select
-  const filteredLeads = employees.filter(
-    (emp) =>
-      emp.name.toLowerCase().includes(searchLead.toLowerCase()) ||
-      emp.position.toLowerCase().includes(searchLead.toLowerCase()) ||
-      emp.employeeId.toLowerCase().includes(searchLead.toLowerCase())
+  // Filters
+  const filteredLeads = employees.filter(emp =>
+    emp.name.toLowerCase().includes(searchLead.toLowerCase()) ||
+    emp.position.toLowerCase().includes(searchLead.toLowerCase()) ||
+    emp.employeeId.toLowerCase().includes(searchLead.toLowerCase())
   )
 
-  // Filter employees for member list
-  const filteredMembers = employees.filter(
-    (emp) =>
-      emp.name.toLowerCase().includes(searchMember.toLowerCase()) ||
-      emp.position.toLowerCase().includes(searchMember.toLowerCase()) ||
-      emp.employeeId.toLowerCase().includes(searchMember.toLowerCase())
+  const filteredMembers = employees.filter(emp =>
+    emp.name.toLowerCase().includes(searchMember.toLowerCase()) ||
+    emp.position.toLowerCase().includes(searchMember.toLowerCase()) ||
+    emp.employeeId.toLowerCase().includes(searchMember.toLowerCase())
   )
 
-  // Filter teams based on search
   const filteredTeams = useMemo(() => {
     if (!teamSearch.trim()) return teams
     const term = teamSearch.toLowerCase()
-    return teams.filter(
-      (team) =>
-        team.name.toLowerCase().includes(term) ||
-        team.department.toLowerCase().includes(term) ||
-        employees.some(emp => 
-          (team.leadId === emp.employeeId || team.memberIds.includes(emp.employeeId)) &&
-          (emp.name.toLowerCase().includes(term) || emp.position.toLowerCase().includes(term))
-        )
+    return teams.filter(team =>
+      team.name.toLowerCase().includes(term) ||
+      team.department.toLowerCase().includes(term) ||
+      employees.some(emp =>
+        (team.leadId === emp.employeeId || team.memberIds.includes(emp.employeeId)) &&
+        (emp.name.toLowerCase().includes(term) || emp.position.toLowerCase().includes(term))
+      )
     )
   }, [teams, teamSearch, employees])
+
+  const getDepartmentLabel = (value: string) =>
+    DEPARTMENTS.find(d => d.value === value)?.label || value
 
   return (
     <>
@@ -146,7 +264,7 @@ export function TeamSection() {
                 className="pl-10 w-full sm:w-64"
               />
             </div>
-            <Button onClick={() => setTeamModalOpen(true)} className="w-full sm:w-auto">
+            <Button onClick={openCreateModal} className="w-full sm:w-auto">
               <Briefcase className="mr-2 h-4 w-4" />
               Create Team
             </Button>
@@ -160,56 +278,52 @@ export function TeamSection() {
                 {teamSearch ? "No teams match your search." : "No teams created yet."}
               </div>
             ) : (
-              <Table className="min-w-[700px]">
+              <Table className="min-w-[900px]">
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="w-1/4">Team Name</TableHead>
-                    <TableHead className="w-1/5">Department</TableHead>
+                    <TableHead className="w-12">ID</TableHead>
+                    <TableHead className="w-1/5">Team Name</TableHead>
                     <TableHead className="w-1/4">Team Lead</TableHead>
-                    <TableHead className="w-1/4">Members</TableHead>
+                    <TableHead className="w-1/3">Team Members (IDs)</TableHead>
                     <TableHead className="text-right w-16">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredTeams.map((team) => {
-                    const lead = employees.find((emp) => emp.employeeId === team.leadId)
-                    const members = team.memberIds
-                      .map(id => employees.find(e => e.employeeId === id)?.name || "")
-                      .filter(Boolean)
+                    const lead = employees.find(emp => emp.employeeId === team.leadId)
                     return (
-                      <TableRow key={team.id} className="hover:bg-accent/50 transition-colors">
+                      <TableRow key={team.id} className="hover:bg-accent/50">
+                        <TableCell className="font-mono text-sm">{team.id}</TableCell>
                         <TableCell className="font-medium">{team.name}</TableCell>
-                        <TableCell>
-                          <span className="px-2 py-1 rounded-full bg-secondary text-xs">
-                            {team.department}
-                          </span>
-                        </TableCell>
                         <TableCell>
                           {lead ? (
                             <div>
                               <div className="font-medium">{lead.name}</div>
-                              <div className="text-xs text-muted-foreground">{lead.position}</div>
+                              <div className="text-xs text-muted-foreground">
+                                {lead.position} ({lead.employeeId})
+                              </div>
                             </div>
                           ) : (
                             <span className="text-muted-foreground">—</span>
                           )}
                         </TableCell>
                         <TableCell>
-                          {members.length > 0 ? (
+                          {team.memberIds.length > 0 ? (
                             <div className="flex flex-wrap gap-1">
-                              {members.slice(0, 2).map((name, i) => (
-                                <span
-                                  key={i}
-                                  className="px-2 py-0.5 rounded-full bg-accent text-xs text-accent-foreground"
+                              {team.memberIds.map(empId => (
+                                <Button
+                                  key={empId}
+                                  variant="outline"
+                                  size="sm"
+                                  className="h-7 px-2 text-xs font-mono hover:bg-accent"
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    openProfileModal(empId)
+                                  }}
                                 >
-                                  {name}
-                                </span>
+                                  {empId}
+                                </Button>
                               ))}
-                              {members.length > 2 && (
-                                <span className="text-xs text-muted-foreground">
-                                  +{members.length - 2} more
-                                </span>
-                              )}
                             </div>
                           ) : (
                             <span className="text-muted-foreground text-sm">—</span>
@@ -217,14 +331,19 @@ export function TeamSection() {
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-1">
-                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8"
+                              onClick={() => openEditModal(team)}
+                            >
                               <Pencil className="h-4 w-4" />
                             </Button>
                             <Button
                               variant="ghost"
                               size="icon"
                               className="h-8 w-8"
-                              onClick={() => setTeams(teams.filter((t) => t.id !== team.id))}
+                              onClick={() => setTeams(prev => prev.filter(t => t.id !== team.id))}
                             >
                               <Trash2 className="h-4 w-4 text-destructive" />
                             </Button>
@@ -240,39 +359,38 @@ export function TeamSection() {
         </Card>
       </section>
 
-      {/* Team Modal */}
-      <Dialog open={teamModalOpen} onOpenChange={setTeamModalOpen}>
+      {/* Create/Edit Team Modal */}
+      <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
         <DialogContent className="sm:max-w-[600px]">
           <DialogHeader>
-            <DialogTitle>Create New Team</DialogTitle>
+            <DialogTitle>{isEditing ? "Edit Team" : "Create New Team"}</DialogTitle>
             <DialogDescription>
-              Assign a team lead and members from your employee directory.
+              {isEditing
+                ? "Update the team details below."
+                : "Assign a team lead and members from your employee directory."}
             </DialogDescription>
           </DialogHeader>
 
           <div className="grid gap-5 py-4">
             <div className="grid gap-2">
-              <Label htmlFor="teamName">Team Name</Label>
+              <Label>Team Name</Label>
               <Input
-                id="teamName"
-                value={newTeam.name}
+                value={formData.name}
                 onChange={(e) => handleChange("name", e.target.value)}
                 placeholder="e.g. Mobile App Team"
               />
             </div>
 
             <div className="grid gap-2">
-              <Label htmlFor="department">Department</Label>
-              <Select onValueChange={(val) => handleChange("department", val)} value={newTeam.department}>
-                <SelectTrigger id="department">
+              <Label>Department</Label>
+              <Select value={formData.department} onValueChange={(val) => handleChange("department", val)}>
+                <SelectTrigger>
                   <SelectValue placeholder="Select department" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Engineering">Engineering</SelectItem>
-                  <SelectItem value="Product">Product</SelectItem>
-                  <SelectItem value="Design">Design</SelectItem>
-                  <SelectItem value="Analytics">Analytics</SelectItem>
-                  <SelectItem value="HR">Human Resources</SelectItem>
+                  {DEPARTMENTS.map(dept => (
+                    <SelectItem key={dept.value} value={dept.value}>{dept.label}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -285,12 +403,12 @@ export function TeamSection() {
                 onChange={(e) => setSearchLead(e.target.value)}
                 className="mb-2"
               />
-              <Select onValueChange={(val) => handleChange("leadId", val)} value={newTeam.leadId}>
+              <Select value={formData.leadId} onValueChange={(val) => handleChange("leadId", val)}>
                 <SelectTrigger>
                   <SelectValue placeholder="Choose a team lead" />
                 </SelectTrigger>
                 <SelectContent>
-                  {filteredLeads.map((emp) => (
+                  {filteredLeads.map(emp => (
                     <SelectItem key={emp.employeeId} value={emp.employeeId}>
                       <div>
                         <div className="font-medium">{emp.name}</div>
@@ -314,11 +432,11 @@ export function TeamSection() {
                 {filteredMembers.length === 0 ? (
                   <p className="text-sm text-muted-foreground text-center py-2">No employees found</p>
                 ) : (
-                  filteredMembers.map((emp) => (
+                  filteredMembers.map(emp => (
                     <div key={emp.employeeId} className="flex items-center gap-3 py-1.5">
                       <input
                         type="checkbox"
-                        checked={newTeam.memberIds.includes(emp.employeeId)}
+                        checked={formData.memberIds.includes(emp.employeeId)}
                         onChange={() => toggleMember(emp.employeeId)}
                         className="h-4 w-4 rounded"
                       />
@@ -335,26 +453,85 @@ export function TeamSection() {
             </div>
 
             <div className="grid gap-2">
-              <Label htmlFor="description">Description (Optional)</Label>
+              <Label>Description (Optional)</Label>
               <Input
-                id="description"
-                value={newTeam.description}
+                value={formData.description}
                 onChange={(e) => handleChange("description", e.target.value)}
-                placeholder="e.g. Responsible for dashboard redesign"
+                placeholder="e.g. Dashboard redesign team"
               />
             </div>
           </div>
 
-          <DialogFooter className="gap-2 sm:gap-0">
-            <Button variant="outline" onClick={() => setTeamModalOpen(false)}>
-              Cancel
-            </Button>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsModalOpen(false)}>Cancel</Button>
             <Button
-              onClick={handleSaveTeam}
-              disabled={!newTeam.name || !newTeam.department || !newTeam.leadId}
+              onClick={handleSave}
+              disabled={!formData.name.trim() || !formData.department || !formData.leadId}
             >
-              Create Team
+              {isEditing ? "Save Changes" : "Create Team"}
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Employee Profile Modal — matches EmployeeSection style */}
+      <Dialog open={profileModalOpen} onOpenChange={setProfileModalOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Employee Details</DialogTitle>
+            <DialogDescription>Personal and contact information</DialogDescription>
+          </DialogHeader>
+          {selectedEmployee && (
+            <div className="grid gap-4 py-4">
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <Label className="text-xs text-muted-foreground">Employee ID</Label>
+                  <div className="font-mono text-sm">{selectedEmployee.employeeId}</div>
+                </div>
+                <div>
+                  <Label className="text-xs text-muted-foreground">Type</Label>
+                  <div className="text-sm">{selectedEmployee.employeeType}</div>
+                </div>
+              </div>
+
+              <div>
+                <Label className="text-xs text-muted-foreground">Full Name</Label>
+                <div className="font-medium">{selectedEmployee.name}</div>
+              </div>
+
+              <div>
+                <Label className="text-xs text-muted-foreground">Position</Label>
+                <div>{selectedEmployee.position}</div>
+              </div>
+
+              <div>
+                <Label className="text-xs text-muted-foreground">Department</Label>
+                <div>{getDepartmentLabel(selectedEmployee.department)}</div>
+              </div>
+
+              <div>
+                <Label className="text-xs text-muted-foreground">Email</Label>
+                <div className="text-sm">{selectedEmployee.email}</div>
+              </div>
+
+              <div>
+                <Label className="text-xs text-muted-foreground">Contact Number</Label>
+                <div className="font-mono">{selectedEmployee.contactNumber}</div>
+              </div>
+
+              <div>
+                <Label className="text-xs text-muted-foreground">Address</Label>
+                <div>{selectedEmployee.address}</div>
+              </div>
+
+              <div>
+                <Label className="text-xs text-muted-foreground">Joining Date</Label>
+                <div>{new Date(selectedEmployee.dateOfJoining).toLocaleDateString()}</div>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button onClick={() => setProfileModalOpen(false)}>Close</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
